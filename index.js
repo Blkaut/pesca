@@ -15,9 +15,13 @@ const client = new Client({
 
 // ── Configuração ──────────────────────────────────────────────
 const DISCORD_TOKEN      = process.env.DISCORD_TOKEN;
-const WORKER_URL         = process.env.WORKER_URL; // ex: https://pesca-bot.SEU_SUBDOMINIO.workers.dev
-const CANAL_COMANDOS     = process.env.CANAL_COMANDOS     || '1535104066546569287';
-const CANAL_AUTO         = process.env.CANAL_AUTO         || '1535141122823954513';
+const WORKER_URL         = process.env.WORKER_URL;
+const CANAL_COMANDOS     = process.env.CANAL_COMANDOS  || '1535104066546569287';
+const CANAL_AUTO         = process.env.CANAL_AUTO      || '1535141122823954513';
+const CANAL_VINCULAR     = process.env.CANAL_VINCULAR  || '1535822507645603892';
+
+// Canais que o bot monitora
+const CANAIS_MONITORADOS = [CANAL_COMANDOS, CANAL_VINCULAR];
 
 // ── Pronto ────────────────────────────────────────────────────
 client.once('ready', () => {
@@ -26,22 +30,25 @@ client.once('ready', () => {
 
 // ── Recebe mensagens ──────────────────────────────────────────
 client.on('messageCreate', async (message) => {
-  // Ignora bots e outros canais
+  // Ignora bots
   if (message.author.bot) return;
-  if (message.channel.id !== CANAL_COMANDOS) return;
+
+  // Só monitora canais configurados
+  if (!CANAIS_MONITORADOS.includes(message.channel.id)) return;
 
   const texto = message.content.trim();
   if (!texto.startsWith('!')) return;
 
   try {
-    // Envia para o Worker
     const res = await fetch(`${WORKER_URL}/discord`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         channel_id: message.channel.id,
+        guild_id:   message.guildId,
         content:    message.content,
         author: {
+          id:       message.author.id,
           username: message.author.username,
           bot:      message.author.bot,
         },
